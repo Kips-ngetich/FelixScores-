@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Match Results | FELIXSCORES</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #07111f;
+      color: #ffffff;
+      line-height: 1.6;
+    }
+
+    header {
+      background: #0d1b2a;
+      padding: 16px;
+      border-bottom: 2px solid #20c878;
+    }
+
+    nav {
+      max-width: 1100px;
+      margin: auto;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .logo {
+      color: #20c878;
+      font-size: 23px;
+      font-weight: bold;
+      text-decoration: none;
+    }
+
+    nav div {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+
+    nav div a {
+      color: #ffffff;
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    nav div a:hover {
+      color: #20c878;
+    }
+
+    main {
+      max-width: 1000px;
+      margin: auto;
+      padding: 22px 16px 45px;
+      min-height: 75vh;
+    }
+
+    .hero {
+      text-align: center;
+      padding: 35px 15px;
+      background: #102337;
+      border-radius: 14px;
+      margin-bottom: 25px;
+    }
+
+    .hero h1 {
+      color: #20c878;
+      font-size: 32px;
+      margin: 0 0 10px;
+    }
+
+    .hero p {
+      color: #cbd5e1;
+      margin: 0;
+    }
+
+    .section-title {
+      margin: 25px 0 15px;
+      font-size: 23px;
+    }
+
+    #matches {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+    }
+
+    .match-card {
+      background: #102337;
+      border: 1px solid #243d52;
+      border-radius: 12px;
+      padding: 18px;
+      overflow-wrap: anywhere;
+    }
+
+    .league-name {
+      color: #20c878;
+      font-weight: bold;
+      font-size: 13px;
+      text-transform: uppercase;
+    }
+
+    .match-card h3 {
+      font-size: 20px;
+      margin: 10px 0;
+    }
+
+    .match-date {
+      color: #bdc9d6;
+      font-size: 14px;
+    }
+
+    .free-box,
+    .premium-box,
+    .result-box {
+      background: #0a1928;
+      padding: 13px;
+      border-radius: 8px;
+      margin-top: 14px;
+    }
+
+    .result-box {
+      border-left: 4px solid #20c878;
+    }
+
+    .result-box p {
+      margin: 5px 0;
+    }
+
+    .empty-message {
+      background: #102337;
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+      color: #cbd5e1;
+      grid-column: 1 / -1;
+    }
+
+    footer {
+      background: #0d1b2a;
+      text-align: center;
+      padding: 22px 15px;
+      color: #bdc9d6;
+      font-size: 13px;
+      border-top: 1px solid #243d52;
+    }
+
+    footer a {
+      color: #20c878;
+      text-decoration: none;
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <nav>
+      <a class="logo" href="index.html">FELIXSCORES</a>
+
+      <div>
+        <a href="index.html">Home</a>
+        <a href="matches.html">Matches</a>
+        <a href="picks.html">Picks</a>
+        <a href="results.html">Results</a>
+        <a href="admin/index.html">Admin Login</a>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+
+    <section class="hero">
+      <h1>Football Match Results</h1>
+      <p>Check completed picks and their recorded results.</p>
+    </section>
+
+    <h2 class="section-title">Completed Picks</h2>
+
+    <section id="matches">
+      <p class="empty-message">Loading results...</p>
+    </section>
+
+  </main>
+
+  <footer>
+    <p>FELIXSCORES — Football Scores • Picks • Results</p>
+    <p>
+      <a href="https://wa.me/254741140400" target="_blank"
+         rel="noopener noreferrer">Contact us on WhatsApp</a>
+    </p>
+    <p>Football predictions are not guaranteed. Please bet responsibly.</p>
+  </footer>
+
+  <script type="module">
+    import { loadMatches } from "./matches.js";
+
+    const container = document.getElementById("matches");
+
+    function showCompletedResults() {
+      const cards = Array.from(
+        container.querySelectorAll(".match-card")
+      );
+
+      let completedCount = 0;
+
+      cards.forEach(card => {
+        const text = card.textContent.toLowerCase();
+
+        const isCompleted =
+          text.includes("pick result: won") ||
+          text.includes("pick result: lost");
+
+        card.style.display = isCompleted ? "" : "none";
+
+        if (isCompleted) {
+          completedCount++;
+        }
+      });
+
+      let emptyMessage = container.querySelector(".empty-message");
+
+      if (completedCount === 0 && !emptyMessage) {
+        emptyMessage = document.createElement("p");
+        emptyMessage.className = "empty-message";
+        emptyMessage.textContent =
+          "No completed picks have been published yet.";
+
+        container.appendChild(emptyMessage);
+      }
+
+      if (completedCount > 0 && emptyMessage) {
+        emptyMessage.remove();
+      }
+    }
+
+    const observer = new MutationObserver(() => {
+      showCompletedResults();
+    });
+
+    observer.observe(container, {
+      childList: true,
+      subtree: true
+    });
+
+    await loadMatches();
+
+    showCompletedResults();
+  </script>
+
+</body>
+</html>

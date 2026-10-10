@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Football Picks | FELIXSCORES</title>
+
+  <meta name="description"
+    content="Explore football picks, free selections and premium pick offers on FELIXSCORES.">
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #081321;
+      color: #ffffff;
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+    }
+
+    header {
+      padding: 18px 16px;
+      background: #122236;
+      border-bottom: 2px solid #35df87;
+    }
+
+    .header-inner {
+      max-width: 1100px;
+      margin: auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      margin: 0;
+      font-size: 25px;
+    }
+
+    .brand span {
+      color: #35df87;
+    }
+
+    nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+
+    nav a {
+      color: white;
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    nav a:hover {
+      color: #35df87;
+    }
+
+    .hero {
+      text-align: center;
+      padding: 45px 18px 30px;
+      background: linear-gradient(135deg, #122236, #081321);
+    }
+
+    .hero h1 {
+      font-size: clamp(28px, 6vw, 44px);
+      margin-bottom: 10px;
+    }
+
+    .hero h1 span {
+      color: #35df87;
+    }
+
+    .hero p {
+      color: #c4d2e0;
+      max-width: 650px;
+      margin: auto;
+    }
+
+    .section {
+      max-width: 1100px;
+      margin: auto;
+      padding: 25px 16px 45px;
+    }
+
+    .section h2 {
+      color: #35df87;
+    }
+
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 20px 0;
+    }
+
+    .filters button,
+    .whatsapp-button {
+      display: inline-block;
+      border: 0;
+      border-radius: 8px;
+      padding: 11px 15px;
+      background: #35df87;
+      color: #061b12;
+      font-weight: bold;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .filters button {
+      background: #263c53;
+      color: white;
+    }
+
+    .filters button.active {
+      background: #35df87;
+      color: #061b12;
+    }
+
+    #matches {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+      gap: 16px;
+    }
+
+    .match-card {
+      padding: 20px;
+      border-radius: 12px;
+      background: #122236;
+      border: 1px solid #263c53;
+      overflow-wrap: anywhere;
+    }
+
+    .match-card h3 {
+      color: #35df87;
+      font-size: 21px;
+    }
+
+    .league-name {
+      color: #b5c8da;
+      font-size: 14px;
+    }
+
+    .free-box,
+    .premium-box,
+    .result-box {
+      margin-top: 15px;
+      padding: 14px;
+      border-radius: 8px;
+      background: #081321;
+    }
+
+    .free-box {
+      border-left: 3px solid #35df87;
+    }
+
+    .premium-box {
+      border-left: 3px solid #f4c95d;
+    }
+
+    .premium-box strong {
+      color: #f4c95d;
+    }
+
+    .whatsapp-button {
+      margin-top: 8px;
+      font-size: 14px;
+    }
+
+    .loading {
+      color: #c4d2e0;
+    }
+
+    footer {
+      text-align: center;
+      padding: 25px 15px;
+      background: #122236;
+      color: #b5c8da;
+    }
+
+    footer a {
+      color: #35df87;
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <div class="header-inner">
+      <p class="brand"><span>FELIX</span>SCORES</p>
+
+      <nav>
+        <a href="index.html">Home</a>
+        <a href="matches.html">Matches</a>
+        <a href="picks.html">Picks</a>
+        <a href="results.html">Results</a>
+        <a href="admin/index.html">Admin Login</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="hero">
+    <h1>Football <span>Picks</span></h1>
+    <p>
+      Explore our published football selections and premium offers.
+      Football predictions are uncertain and no result is guaranteed.
+    </p>
+  </section>
+
+  <main class="section">
+    <h2>Today's Picks</h2>
+
+    <div class="filters">
+      <button type="button" class="active" data-filter="all">
+        All Picks
+      </button>
+
+      <button type="button" data-filter="free">
+        Free Picks
+      </button>
+
+      <button type="button" data-filter="premium">
+        Premium Offers
+      </button>
+    </div>
+
+    <div id="matches">
+      <p class="loading">Loading football picks...</p>
+    </div>
+  </main>
+
+  <footer>
+    <p>FELIXSCORES — Football Scores • Picks • Results</p>
+    <p>
+      Contact us:
+      <a href="https://wa.me/254741140400"
+        target="_blank" rel="noopener noreferrer">
+        WhatsApp +254 741 140 400
+      </a>
+    </p>
+    <p>Football picks are for informational purposes only.</p>
+  </footer>
+
+  <script type="module">
+    import { loadMatches } from "./matches.js";
+
+    let currentFilter = "all";
+
+    function applyFilter() {
+      document.querySelectorAll("#matches .match-card")
+        .forEach(card => {
+          const type = card.dataset.pickType || "free";
+
+          card.hidden =
+            currentFilter !== "all" &&
+            currentFilter !== type;
+        });
+    }
+
+    document.querySelectorAll("[data-filter]")
+      .forEach(button => {
+        button.addEventListener("click", () => {
+          currentFilter = button.dataset.filter;
+
+          document.querySelectorAll("[data-filter]")
+            .forEach(item => item.classList.remove("active"));
+
+          button.classList.add("active");
+          applyFilter();
+        });
+      });
+
+    const container = document.getElementById("matches");
+
+    const observer = new MutationObserver(() => {
+      container.querySelectorAll(".match-card").forEach(card => {
+        if (card.querySelector(".premium-box")) {
+          card.dataset.pickType = "premium";
+        } else {
+          card.dataset.pickType = "free";
+        }
+      });
+
+      applyFilter();
+    });
+
+    observer.observe(container, {
+      childList: true,
+      subtree: true
+    });
+
+    loadMatches();
+  </script>
+
+</body>
+</html>

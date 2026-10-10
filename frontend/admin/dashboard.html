@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FELIXSCORES Admin Dashboard</title>
+
+<style>
+*{box-sizing:border-box}
+body{margin:0;padding:16px;background:#081321;color:white;font-family:Arial,sans-serif}
+header,.panel{max-width:1000px;margin:0 auto 20px}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+h1 span,h3{color:#35df87}
+.panel{background:#122236;padding:20px;border:1px solid #263c53;border-radius:14px}
+label{display:block;margin:14px 0 6px}
+input,select,button{width:100%;padding:12px;border-radius:8px;border:1px solid #344a60;font-size:15px}
+input,select{background:#081321;color:white}
+button{border:0;background:#35df87;color:#061b12;font-weight:bold;cursor:pointer;margin-top:12px}
+button:disabled{opacity:.6}
+.secondary{background:#263c53;color:white}
+.danger{background:#dc414b;color:white}
+.small{width:auto;padding:9px 12px;margin-right:6px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 14px}
+.match{background:#081321;border:1px solid #344a60;border-radius:10px;padding:16px;margin-top:12px;overflow-wrap:anywhere}
+.muted{color:#a8b9cb;font-size:14px}
+#message{margin-top:12px;line-height:1.5;overflow-wrap:anywhere}
+.hidden{display:none}
+@media(max-width:600px){.grid{grid-template-columns:1fr}.panel{padding:15px}}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1><span>FELIX</span>SCORES</h1>
+    <p class="muted">Football management dashboard</p>
+  </div>
+  <button id="logoutButton" class="secondary" style="width:auto">Log out</button>
+</header>
+
+<main id="dashboard" class="hidden">
+  <section class="panel">
+    <h2 id="formTitle">Publish a Match</h2>
+    <p class="muted">Publish matches, manage picks, and update results.</p>
+
+    <form id="matchForm">
+      <div class="grid">
+        <div>
+          <label for="league">League</label>
+          <input id="league" required placeholder="Premier League">
+        </div>
+        <div>
+          <label for="date">Match Date</label>
+          <input id="date" type="date" required>
+        </div>
+        <div>
+          <label for="time">Kick-off Time</label>
+          <input id="time" type="time" required>
+        </div>
+        <div>
+          <label for="status">Match Status</label>
+          <select id="status">
+            <option value="upcoming">Upcoming</option>
+            <option value="live">Live</option>
+            <option value="finished">Finished</option>
+            <option value="postponed">Postponed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+        <div>
+          <label for="homeTeam">Home Team</label>
+          <input id="homeTeam" required>
+        </div>
+        <div>
+          <label for="awayTeam">Away Team</label>
+          <input id="awayTeam" required>
+        </div>
+        <div>
+          <label for="pickType">Pick Type</label>
+          <select id="pickType">
+            <option value="free">Free Pick</option>
+            <option value="premium">Premium Pick</option>
+          </select>
+        </div>
+        <div>
+          <label for="price">Premium Price (KSh)</label>
+          <input id="price" type="number" min="0" step="1" value="0">
+        </div>
+      </div>
+
+      <label for="pick">Football Pick</label>
+      <input id="pick" placeholder="e.g. Home win or Over 2.5 goals">
+
+      <div class="grid">
+        <div>
+          <label for="result">Pick Result</label>
+          <select id="result">
+            <option value="pending">Pending</option>
+            <option value="won">Won</option>
+            <option value="lost">Lost</option>
+          </select>
+        </div>
+        <div>
+          <label for="score">Final Score</label>
+          <input id="score" placeholder="e.g. 2-1">
+        </div>
+      </div>
+
+      <button id="saveButton" type="submit">Publish Match</button>
+      <button id="cancelButton" class="secondary hidden" type="button">Cancel Editing</button>
+    </form>
+    <p id="message" role="status"></p>
+  </section>
+
+  <section class="panel">
+    <h2>Published Matches</h2>
+    <p class="muted">Edit match details or update the result after a match.</p>
+    <div id="matches">Loading matches...</div>
+  </section>
+</main>
+
+<script type="module">
+import {
+  db, auth, collection, addDoc, getDocs, doc, updateDoc,
+  deleteDoc, signOut, onAuthStateChanged
+} from "../firebase.js";
+
+const ADMIN_EMAIL = "Kipkoechf780@gmail.com";
+const dashboard = document.getElementById("dashboard");
+const form = document.getElementById("matchForm");
+const matchesBox = document.getElementById("matches");
+const message = document.getElementById("message");
+const saveButton = document.getElementById("saveButton");
+const cancelButton = document.getElementById("cancelButton");
+let editingId = null;
+let loadingUser = true;
+
+const field = id => document.getElementById(id);
+
+onAuthStateChanged(auth, user => {
+  if (!user) {
+    window.location.replace("index.html");
+    return;
+  }
+
+  if ((user.email || "").toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+    message.textContent = "This account is not authorized to use the admin dashboard.";
+    message.style.color = "#ff8585";
+    signOut(auth).finally(() => window.location.replace("index.html"));
+    return;
+  }
+
+  loadingUser = false;
+  dashboard.classList.remove("hidden");
+  loadMatches();
+});
+
+field("logoutButton").addEventListener("click", async () => {
+  await signOut(auth);
+  window.location.replace("index.html");
+});
+
+field("pickType").addEventListener("change", () => {
+  field("pick").placeholder = field("pickType").value === "premium"
+    ? "Premium pick (stored privately)"
+    : "Free pick (shown publicly)";
+});
+
+form.addEventListener("submit", async event => {
+  event.preventDefault();
+  if (loadingUser || !auth.currentUser) return;
+
+  const type = field("pickType").value;
+  const pickText = field("pick").value.trim();
+  const price = Number(field("price").value || 0);
+
+  if (type === "premium" && !pickText) {
+    message.style.color = "#ffcf70";
+    message.textContent = "Enter the premium pick before publishing.";
+    return;
+  }
+
+  if (type === "premium" && (!Number.isFinite(price) || price < 0)) {
+    message.textContent = "Enter a valid premium price.";
+    return;
+  }
+
+  const data = {
+    league: field("league").value.trim(),
+    date: field("date").value,
+    time: field("time").value,
+    status: field("status").value,
+    homeTeam: field("homeTeam").value.trim(),
+    awayTeam: field("awayTeam").value.trim(),
+    pickType: type,
+    price: type === "premium" ? price : 0,
+    result: field("result").value,
+    score: field("score").value.trim(),
+    updatedAt: new Date().toISOString()
+  };
+
+  if (type === "free") data.pick = pickText;
+
+  saveButton.disabled = true;
+  saveButton.textContent = "Saving...";
+  message.textContent = "";
+
+  try {
+    if (editingId) {
+      const matchRef = doc(db, "matches", editingId);
+      await updateDoc(matchRef, {
+        ...data,
+        ...(type === "premium" ? { pick: null } : {})
+      });
+
+      const premiumRef = await findPremiumDocument(editingId);
+      if (type === "premium") {
+        if (premiumRef) {
+          await updateDoc(premiumRef, {
+            pick: pickText,
+            updatedAt: new Date().toISOString()
+          });
+        } else {
+          await addDoc(collection(db, "premiumPicks"), {
+            matchId: editingId,
+            pick: pickText,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          });
+        }
+      } else if (premiumRef) {
+        await deleteDoc(premiumRef);
+      }
+
+      message.textContent = "Match updated successfully.";
+    } else {
+      const matchData = {
+        ...data,
+        createdAt: new Date().toISOString()
+      };
+      if (type === "premium") matchData.pick = null;
+
+      const newMatch = await addDoc(collection(db, "matches"), matchData);
+
+      if (type === "premium") {
+        await addDoc(collection(db, "premiumPicks"), {
+          matchId: newMatch.id,
+          pick: pickText,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        });
+      }
+
+      message.textContent = "Match published successfully.";
+    }
+
+    message.style.color = "#35df87";
+    resetForm();
+    await loadMatches();
+  } catch (error) {
+    console.error(error);
+    message.style.color = "#ff8585";
+    message.textContent = "Could not save match: " + error.message;
+  } finally {
+    saveButton.disabled = false;
+    saveButton.textContent = editingId ? "Update Match" : "Publish Match";
+  }
+});
+
+cancelButton.addEventListener("click", resetForm);
+
+function resetForm() {
+  form.reset();
+  field("price").value = "0";
+  editingId = null;
+  field("formTitle").textContent = "Publish a Match";
+  saveButton.textContent = "Publish Match";
+  cancelButton.classList.add("hidden");
+}
+
+async function findPremiumDocument(matchId) {
+  const snapshot = await getDocs(collection(db, "premiumPicks"));
+  const found = snapshot.docs.find(item => item.data().matchId === matchId);
+  return found ? doc(db, "premiumPicks", found.id) : null;
+}
+
+async function loadMatches() {
+  matchesBox.textContent = "Loading matches...";
+
+  try {
+    const snapshot = await getDocs(collection(db, "matches"));
+    const items = snapshot.docs.map(item => ({
+      id: item.id,
+      ...item.data()
+    }));
+
+    items.sort((a, b) =>
+      `${b.date || ""} ${b.time || ""}`.localeCompare(`${a.date || ""} ${a.time || ""}`)
+    );
+
+    if (!items.length) {
+      matchesBox.innerHTML = '<p class="muted">No matches published yet. Use the form above to add your first match.</p>';
+      return;
+    }
+
+    matchesBox.innerHTML = "";
+
+    for (const match of items) {
+      const card = document.createElement("article");
+      card.className = "match";
+
+      const title = document.createElement("h3");
+      title.textContent = `${match.homeTeam || "Home"} vs ${match.awayTeam || "Away"}`;
+      card.appendChild(title);
+
+      const details = document.createElement("p");
+      details.className = "muted";
+      details.textContent = `${match.league || ""} • ${match.date || ""} ${match.time || ""} • ${match.status || "upcoming"}`;
+      card.appendChild(details);
+
+      const type = document.createElement("p");
+      type.textContent = match.pickType === "premium"
+        ? `🔒 Premium Pick • KSh ${Number(match.price || 0).toLocaleString("en-KE")}`
+        : `🟢 Free Pick • ${match.pick || "No pick entered"}`;
+      card.appendChild(type);
+
+      const result = document.createElement("p");
+      result.textContent = `Pick result: ${match.result || "pending"}${match.score ? " • Score: " + match.score : ""}`;
+      card.appendChild(result);
+
+      const edit = document.createElement("button");
+      edit.className = "small";
+      edit.textContent = "Edit";
+      edit.addEventListener("click", () => startEditing(match));
+      card.appendChild(edit);
+
+      const remove = document.createElement("button");
+      remove.className = "small danger";
+      remove.textContent = "Delete";
+      remove.addEventListener("click", () => removeMatch(match.id));
+      card.appendChild(remove);
+
+      matchesBox.appendChild(card);
+    }
+  } catch (error) {
+    console.error(error);
+    matchesBox.textContent = "Could not load matches: " + error.message;
+  }
+}
+
+async function startEditing(match) {
+  editingId = match.id;
+
+  field("league").value = match.league || "";
+  field("date").value = match.date || "";
+  field("time").value = match.time || "";
+  field("status").value = match.status || "upcoming";
+  field("homeTeam").value = match.homeTeam || "";
+  field("awayTeam").value = match.awayTeam || "";
+  field("pickType").value = match.pickType || "free";
+  field("price").value = match.price ?? 0;
+  field("result").value = match.result || "pending";
+  field("score").value = match.score || "";
+
+  if (match.pickType === "premium") {
+    field("pick").value = "";
+    try {
+      const premiumRef = await findPremiumDocument(match.id);
+      if (premiumRef) {
+        const snapshot = await getDocs(collection(db, "premiumPicks"));
+        const found = snapshot.docs.find(item => item.id === premiumRef.id);
+        field("pick").value = found?.data().pick || "";
+      }
+    } catch (error) {
+      console.error(error);
+      message.textContent = "Could not load premium pick. Check Firestore permissions.";
+    }
+  } else {
+    field("pick").value = match.pick || "";
+  }
+
+  field("formTitle").textContent = "Edit Match";
+  saveButton.textContent = "Update Match";
+  cancelButton.classList.remove("hidden");
+  window.scrollTo({top: 0, behavior: "smooth"});
+}
+
+async function removeMatch(matchId) {
+  if (!confirm("Delete this match and its premium pick, if any?")) return;
+
+  try {
+    const premiumRef = await findPremiumDocument(matchId);
+    if (premiumRef) await deleteDoc(premiumRef);
+    await deleteDoc(doc(db, "matches", matchId));
+    message.style.color = "#35df87";
+    message.textContent = "Match deleted.";
+    if (editingId === matchId) resetForm();
+    await loadMatches();
+  } catch (error) {
+    console.error(error);
+    message.style.color = "#ff8585";
+    message.textContent = "Could not delete match: " + error.message;
+  }
+}
+</script>
+</body>
+</html>

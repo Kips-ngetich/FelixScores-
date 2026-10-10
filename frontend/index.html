@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FELIXSCORES | Football Scores, Picks & Results</title>
+<meta name="description" content="FELIXSCORES football matches, free picks, premium pick offers and results.">
+
+<style>
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:#081321;color:#fff;font-family:Arial,sans-serif;line-height:1.6}
+header{background:#122236;padding:16px 5%;border-bottom:2px solid #35df87}
+nav{max-width:1100px;margin:auto;display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap}
+.logo{font-size:25px;font-weight:bold;color:#35df87}
+.logo span{color:white}
+nav a{color:white;text-decoration:none;margin:5px 8px;font-size:14px}
+nav a:hover{color:#35df87}
+.hero{padding:65px 20px;text-align:center;background:linear-gradient(135deg,#081321,#173b39)}
+.hero h1{font-size:clamp(30px,6vw,48px);line-height:1.2;margin:0 auto 18px}
+.hero h1 span{color:#35df87}
+.hero p{max-width:650px;margin:0 auto 25px;color:#d0deeb}
+.button{display:inline-block;padding:12px 20px;background:#35df87;color:#071a12;text-decoration:none;border-radius:8px;font-weight:bold;margin:5px}
+.button.secondary{background:transparent;border:1px solid #35df87;color:#35df87}
+section{max-width:1100px;margin:auto;padding:35px 20px}
+section h2{text-align:center;margin-top:0;font-size:28px}
+.intro{text-align:center;color:#a8b9cb}
+.features{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+.feature{background:#122236;padding:20px;border:1px solid #263c53;border-radius:12px}
+.feature h3{color:#35df87;margin-top:0}
+#matches{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:15px}
+.match-card{background:#122236;border:1px solid #263c53;border-radius:12px;padding:18px;overflow-wrap:anywhere}
+.match-card h3{color:#35df87}
+.league-name,.match-date{color:#a8b9cb;font-size:14px}
+.free-box,.premium-box,.result-box{padding:12px;margin-top:12px;border-radius:8px;background:#081321}
+.free-box{border-left:3px solid #35df87}
+.premium-box{border-left:3px solid #ffc857}
+.result-box{border-left:3px solid #4da3ff}
+.whatsapp-button{display:inline-block;background:#25d366;color:#062413;padding:10px 13px;text-decoration:none;border-radius:7px;font-weight:bold;margin-top:8px}
+.contact{text-align:center;background:#122236;border-radius:14px;padding:25px}
+footer{text-align:center;padding:25px;color:#a8b9cb;border-top:1px solid #263c53;font-size:14px}
+@media(max-width:600px){header{padding:14px}nav{justify-content:center}nav a{margin:5px} .hero{padding:45px 18px}}
+</style>
+</head>
+
+<body>
+
+<header>
+<nav>
+  <a href="index.html" class="logo">FELIX<span>SCORES</span></a>
+  <div>
+    <a href="index.html">Home</a>
+    <a href="matches.html">Matches</a>
+    <a href="picks.html">Picks</a>
+    <a href="results.html">Results</a>
+    <a href="admin/index.html">Admin Login</a>
+  </div>
+</nav>
+</header>
+
+<main>
+  <section class="hero">
+    <h1>Welcome to <span>FELIXSCORES</span></h1>
+    <p>Football Scores • Picks • Results</p>
+    <p>Follow upcoming matches, explore free picks, view published results and ask us about premium picks.</p>
+    <a class="button" href="matches.html">Explore Matches</a>
+    <a class="button secondary" href="picks.html">Explore Picks</a>
+  </section>
+
+  <section>
+    <h2>What FELIXSCORES Offers</h2>
+    <div class="features">
+      <article class="feature">
+        <h3>⚽ Football Matches</h3>
+        <p>Check published fixtures, leagues, dates and kick-off times.</p>
+      </article>
+      <article class="feature">
+        <h3>🟢 Free Picks</h3>
+        <p>Explore football picks published for visitors.</p>
+      </article>
+      <article class="feature">
+        <h3>🔒 Premium Offers</h3>
+        <p>Ask us about premium pick offers and pricing through WhatsApp.</p>
+      </article>
+      <article class="feature">
+        <h3>📊 Match Results</h3>
+        <p>Review published pick results and final scores.</p>
+      </article>
+    </div>
+  </section>
+
+  <section>
+    <h2>Latest Published Matches</h2>
+    <p class="intro">Matches and picks published by the FELIXSCORES admin.</p>
+    <div id="matches">
+      <article class="match-card">
+        <p>Connecting to matches...</p>
+      </article>
+    </div>
+    <p class="intro"><a class="button" href="matches.html">View All Matches</a></p>
+  </section>
+
+  <section>
+    <div class="contact">
+      <h2>Contact FELIXSCORES</h2>
+      <p>Have a question about our football picks? Contact us on WhatsApp.</p>
+      <a class="whatsapp-button" href="https://wa.me/254741140400" target="_blank" rel="noopener noreferrer">WhatsApp: +254 741 140 400</a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <p><strong>FELIXSCORES</strong> — Football Scores • Picks • Results</p>
+  <p>Football predictions are uncertain. Please make responsible decisions.</p>
+  <p>&copy; <span id="year"></span> FELIXSCORES</p>
+</footer>
+
+<script type="module">
+import { loadMatches } from "./matches.js";
+
+document.getElementById("year").textContent = new Date().getFullYear();
+loadMatches();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FELIXSCORES Admin Login</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: #071a33;
+      font-family: Arial, sans-serif;
+    }
+
+    .login-box {
+      width: 100%;
+      max-width: 400px;
+      background: white;
+      padding: 30px;
+      border-radius: 14px;
+      box-shadow: 0 15px 40px rgba(0,0,0,.25);
+    }
+
+    .logo {
+      text-align: center;
+      font-size: 27px;
+      font-weight: bold;
+      color: #071a33;
+      margin-bottom: 8px;
+    }
+
+    .logo span {
+      color: #20c878;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #667085;
+      margin-bottom: 28px;
+    }
+
+    label {
+      display: block;
+      margin: 15px 0 7px;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    input {
+      width: 100%;
+      padding: 13px;
+      border: 1px solid #d0d5dd;
+      border-radius: 7px;
+      font-size: 16px;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      margin-top: 22px;
+      border: none;
+      border-radius: 7px;
+      background: #20c878;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: .6;
+    }
+
+    #message {
+      margin-top: 16px;
+      text-align: center;
+      font-size: 14px;
+      overflow-wrap: anywhere;
+    }
+
+    .back {
+      display: block;
+      margin-top: 22px;
+      text-align: center;
+      color: #475467;
+      text-decoration: none;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="login-box">
+
+    <div class="logo">FELIX<span>SCORES</span></div>
+
+    <p class="subtitle">Administrator Login</p>
+
+    <form id="loginForm">
+
+      <label for="email">Email Address</label>
+
+      <input
+        id="email"
+        type="email"
+        placeholder="Your admin email"
+        autocomplete="username"
+        required
+      >
+
+      <label for="password">Password</label>
+
+      <input
+        id="password"
+        type="password"
+        placeholder="Your password"
+        autocomplete="current-password"
+        required
+      >
+
+      <button id="loginButton" type="submit">
+        Sign In
+      </button>
+
+    </form>
+
+    <div id="message" role="status"></div>
+
+    <a class="back" href="../index.html">
+      ← Back to FELIXSCORES
+    </a>
+
+  </div>
+
+<script type="module">
+  import {
+    auth,
+    signInWithEmailAndPassword,
+    onAuthStateChanged,
+    signOut
+  } from "../firebase.js";
+
+  const form = document.getElementById("loginForm");
+  const message = document.getElementById("message");
+  const button = document.getElementById("loginButton");
+
+  let loginInProgress = false;
+
+  onAuthStateChanged(auth, (user) => {
+    if (loginInProgress) return;
+
+    if (user) {
+      message.style.color = "#b54708";
+      message.textContent = "Checking account: " + user.email;
+
+      if ((user.email || "").toLowerCase() ===
+          "kipkoechf780@gmail.com".toLowerCase()) {
+        window.location.replace("/admin/dashboard");
+      } else {
+        message.style.color = "red";
+        message.textContent =
+          "Wrong account: " + user.email +
+          ". Sign out and use the administrator account.";
+
+        signOut(auth);
+      }
+    }
+  });
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+
+    loginInProgress = true;
+    button.disabled = true;
+    button.textContent = "Signing in...";
+    message.style.color = "#475467";
+    message.textContent = "Checking login...";
+
+    try {
+      const result = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+
+      if ((result.user.email || "").toLowerCase() !==
+          "kipkoechf780@gmail.com".toLowerCase()) {
+        await signOut(auth);
+        throw new Error(
+          "This is not the administrator account. Signed in as: " +
+          result.user.email
+        );
+      }
+
+      message.style.color = "green";
+      message.textContent = "Login successful. Opening dashboard...";
+
+      window.location.replace("/admin/dashboard");
+    } catch (error) {
+      message.style.color = "red";
+      message.textContent =
+        "Login error (" + (error.code || "unknown") + "): " +
+        error.message;
+
+      loginInProgress = false;
+      button.disabled = false;
+      button.textContent = "Sign In";
+    }
+  });
+</script>
+</body>
+</html>
