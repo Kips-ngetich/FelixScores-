@@ -40,7 +40,19 @@ button:disabled{opacity:.6}
 
 <main id="dashboard" class="hidden">
   <section class="panel">
-    <h2 id="formTitle">Publish a Match</h2>
+    <h2>Daily VIP Package</h2>
+    <p class="muted">Set one price for all VIP matches on the selected date.</p>
+
+    <label for="vipPackageDate">Package Date</label>
+    <input id="vipPackageDate" type="date" required>
+
+    <label for="vipPackagePrice">Package Price (KSh)</label>
+<input id="vipPackagePrice" type="number" min="0" step="1" placeholder="Enter daily package price" required>
+    <button id="saveVipPackage" type="button">Save Daily VIP Price</button>
+    <p id="vipPackageMessage" role="status"></p>
+</section>
+
+<section class="panel">    <h2 id="formTitle">Publish a Match</h2>
     <p class="muted">Publish matches, manage picks, and update results.</p>
 
     <form id="matchForm">
@@ -122,7 +134,7 @@ button:disabled{opacity:.6}
 <script type="module">
 import {
   db, auth, collection, addDoc, getDocs, doc, updateDoc,
-  deleteDoc, signOut, onAuthStateChanged
+  deleteDoc, setDoc, signOut, onAuthStateChanged
 } from "../firebase.js";
 
 const ADMIN_EMAIL = "Kipkoechf780@gmail.com";
@@ -165,7 +177,59 @@ field("pickType").addEventListener("change", () => {
     ? "Premium pick (stored privately)"
     : "Free pick (shown publicly)";
 });
+field("vipPackageDate").addEventListener("change", async () => {
+  const date = field("vipPackageDate").value;
+  const priceInput = field("vipPackagePrice");
+  const status = field("vipPackageMessage");
 
+  if (!date) return;
+
+  try {
+    const snapshot = await getDocs(collection(db, "vipPackages"));
+    const savedPackage = snapshot.docs.find(item => item.id === date);
+
+    priceInput.value = savedPackage ? savedPackage.data().price : "";
+    status.textContent = savedPackage
+      ? `Saved price loaded for ${date}.`
+      : `No price saved for ${date}. Enter a new price.`;
+  } catch (error) {
+    console.error(error);
+    status.textContent = "Could not load the saved price.";
+  }
+});
+field("saveVipPackage").addEventListener("click", async () => {
+  const date = field("vipPackageDate").value;
+  const price = Number(field("vipPackagePrice").value);
+  const status = field("vipPackageMessage");
+
+  if (!date || field("vipPackagePrice").value === "" ||
+      !Number.isFinite(price) || price < 0) {
+    status.style.color = "#ff8585";
+    status.textContent = "Choose a date and enter a valid price.";
+    return;
+  }
+
+  const button = field("saveVipPackage");
+  button.disabled = true;
+  status.textContent = "Saving...";
+
+  try {
+    await setDoc(doc(db, "vipPackages", date), {
+      date,
+      price,
+      updatedAt: new Date().toISOString()
+    });
+
+    status.style.color = "#35df87";
+    status.textContent = `VIP package price saved: KSh ${price.toLocaleString("en-KE")} for ${date}.`;
+  } catch (error) {
+    console.error(error);
+    status.style.color = "#ff8585";
+    status.textContent = "Could not save price: " + error.message;
+  } finally {
+    button.disabled = false;
+  }
+});
 form.addEventListener("submit", async event => {
   event.preventDefault();
   if (loadingUser || !auth.currentUser) return;
@@ -231,8 +295,8 @@ form.addEventListener("submit", async event => {
       } else if (premiumRef) {
         await deleteDoc(premiumRef);
       }
-
-      message.textContent = "Match updated successfully.";
+await syncRevealedPick(editingId, data.status, type, pickText);
+message.textContent = "Match updated successfully.";
     } else {
       const matchData = {
         ...data,
@@ -250,8 +314,9 @@ form.addEventListener("submit", async event => {
           updatedAt: new Date().toISOString()
         });
       }
+await syncRevealedPick(newMatch.id, data.status, type, pickText);
+message.textContent = "Match published successfully.";
 
-      message.textContent = "Match published successfully.";
     }
 
     message.style.color = "#35df87";
@@ -268,7 +333,19 @@ form.addEventListener("submit", async event => {
 });
 
 cancelButton.addEventListener("click", resetForm);
+async function syncRevealedPick(matchId, status, type, pickText) {
+  const revealedRef = doc(db, "revealedPicks", matchId);
 
+  if (type === "premium" && status === "finished" && pickText) {
+    await setDoc(revealedRef, {
+      matchId,
+      pick: pickText,
+      updatedAt: new Date().toISOString()
+    });
+  } else {
+    await deleteDoc(revealedRef);
+  }
+}
 function resetForm() {
   form.reset();
   field("price").value = "0";
