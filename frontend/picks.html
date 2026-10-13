@@ -130,19 +130,51 @@
       gap: 16px;
     }
 
-    .match-card {
-      padding: 20px;
-      border-radius: 12px;
-      background: #122236;
-      border: 1px solid #263c53;
-      overflow-wrap: anywhere;
-    }
+.match-card {
+padding: 12px;
+border-radius: 10px;
+background: #122236;
+border: 1px solid #263c53;
+overflow-wrap: anywhere;
+}
 
-    .match-card h3 {
-      color: #35df87;
-      font-size: 21px;
-    }
+.match-card h3 {
+  color: #35df87;
+  font-size: 17px;
+  margin: 5px 0;
+}
 
+.match-card p {
+  margin: 4px 0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.league-name {
+  color: #b5c8da;
+  font-size: 12px;
+}
+
+.free-box,
+.premium-box,
+.result-box {
+  margin-top: 8px;
+  padding: 9px;
+  border-radius: 8px;
+  background: #081321;
+}
+
+.free-box {
+  border-left: 3px solid #35df87;
+}
+
+.premium-box {
+  border-left: 3px solid #f4c95d;
+}
+
+.premium-box strong {
+  color: #f4c95d;
+}
     .league-name {
       color: #b5c8da;
       font-size: 14px;
@@ -152,7 +184,7 @@
     .premium-box,
     .result-box {
       margin-top: 15px;
-      padding: 14px;
+      padding: 10px;
       border-radius: 8px;
       background: #081321;
     }
@@ -188,6 +220,57 @@
     footer a {
       color: #35df87;
     }
+.vip-package {
+grid-column: 1 / -1;
+padding: 12px;
+margin-bottom: 12px;
+border: 1px solid #f4c95d;
+border-radius: 12px;
+background: #0c1928;
+}
+
+.vip-package > h3 {
+  margin: 0 0 8px;
+  color: #f4c95d;
+  font-size: 17px;
+}
+
+.vip-package-price {
+  margin: 6px 0;
+  padding: 9px;
+  border-radius: 8px;
+  background: #172b3f;
+  color: #35df87;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.vip-package > .muted {
+  margin: 5px 0;
+  font-size: 12px;
+}
+
+.vip-package .match-card {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 3px;
+  margin-top: 8px;
+  padding: 9px;
+  border-radius: 8px;
+  background: #122236;
+}
+
+.vip-package .match-card h4 {
+  margin: 0 0 4px;
+  color: #ffffff;
+  font-size: 14px;
+}
+
+.vip-package .match-card p {
+  margin: 2px 0;
+  font-size: 12px;
+  line-height: 1.4;
+}
   </style>
 </head>
 
@@ -254,17 +337,40 @@
 
     let currentFilter = "all";
 
-    function applyFilter() {
-      document.querySelectorAll("#matches .match-card")
-        .forEach(card => {
-          const type = card.dataset.pickType || "free";
+function applyFilter() {
+const freeSection = document.querySelector(
+"#matches .free-picks-section"
+);
 
-          card.hidden =
-            currentFilter !== "all" &&
-            currentFilter !== type;
-        });
-    }
+  const vipSection = document.querySelector(
+    "#matches .vip-picks-section"
+  );
 
+  if (freeSection) {
+    freeSection.hidden =
+      currentFilter !== "all" &&
+      currentFilter !== "free";
+  }
+
+  if (vipSection) {
+    vipSection.hidden =
+      currentFilter !== "all" &&
+      currentFilter !== "premium";
+  }
+
+  document.querySelectorAll("#matches .match-card")
+    .forEach(card => {
+      const type = card.dataset.pickType ||
+        (card.closest(".vip-package") ||
+         card.classList.contains("premium-box")
+          ? "premium"
+          : "free");
+
+      card.hidden =
+        currentFilter !== "all" &&
+        currentFilter !== type;
+    });
+}
     document.querySelectorAll("[data-filter]")
       .forEach(button => {
         button.addEventListener("click", () => {
